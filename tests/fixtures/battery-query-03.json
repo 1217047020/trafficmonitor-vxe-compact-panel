@@ -1,0 +1,9 @@
+{
+  "source": "real hardware capture; device identifiers and timestamps removed",
+  "interfaces": [
+    {
+      "response_hex": "08 04 00 00 00 02 55 00 0f a8 00 00 00 00 00 00 3b",
+      "status": "response"
+    }
+  ]
+}

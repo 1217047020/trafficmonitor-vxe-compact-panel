@@ -1,0 +1,9 @@
+{
+  "source": "real hardware capture; device identifiers and timestamps removed",
+  "interfaces": [
+    {
+      "response_hex": "",
+      "status": "timeout"
+    }
+  ]
+}

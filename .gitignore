@@ -1,0 +1,18 @@
+upstream/
+downloads/
+runtime/
+node_modules/
+__pycache__/
+*.pyc
+evidence/
+work/
+build/
+*.obj
+*.pdb
+*.exp
+*.lib
+*.exe
+*.dll
+# Local planning/history notes; publish the portable README and docs instead.
+/# 首版计划：复用 BatteryMonitor，适配 VXE R1 星闪版.md
+/电量显示插件可参考的项目.md

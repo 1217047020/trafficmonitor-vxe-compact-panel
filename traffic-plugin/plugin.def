@@ -1,0 +1,3 @@
+LIBRARY VxeBattery
+EXPORTS
+    TMPluginGetInstance

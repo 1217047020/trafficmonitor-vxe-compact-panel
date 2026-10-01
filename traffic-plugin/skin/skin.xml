@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <skin><text_color>16777215</text_color><specify_each_item_color>false</specify_each_item_color><skin_author>Local VXE Battery Project</skin_author><font name="微软雅黑" size="10" style="0" /></skin>
+  <plugin_map><mouse_battery>vxe_r1_battery</mouse_battery></plugin_map>
+  <layout text_height="24" no_label="false">
+    <layout_s width="160" height="34"><mouse_battery x="10" y="5" width="140" align="2" show="true" /></layout_s>
+    <layout_l width="160" height="34"><mouse_battery x="10" y="5" width="140" align="2" show="true" /></layout_l>
+  </layout>
+  <preview width="160" height="70"><s x="0" y="0" /><l x="0" y="36" /></preview>
+</root>
