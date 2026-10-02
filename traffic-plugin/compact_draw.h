@@ -7,11 +7,12 @@
 #endif
 #include <windows.h>
 #include "compact_model.h"
+#include "device_icon_draw.h"
 #include <cstdlib>
 
 namespace compact {
 struct Layout {
-    int width = 0, height = 0, speed_width = 0, percent_width = 0;
+    int width = 0, height = 0, speed_width = 0, percent_width = 0, battery_width = 0;
     int arrow = 0, icon = 0, gap = 0, icon_gap = 0, pad = 0, text_height = 0;
     double scale = 1;
     int px(int logical) const { return std::max(1, static_cast<int>(std::lround(logical * scale))); }
@@ -33,7 +34,8 @@ inline Layout measure(HDC dc) {
     for (const auto& s : speed_bounds()) l.speed_width = std::max(l.speed_width, text_width(dc, s));
     l.percent_width = std::max(text_width(dc, L"--"), text_width(dc, L"?"));
     for (int n = 0; n <= 100; ++n) l.percent_width = std::max(l.percent_width, text_width(dc, std::to_wstring(n)));
-    l.width = l.battery_start() + l.percent_width + l.pad;
+    l.battery_width = std::max(l.percent_width, l.px(14));
+    l.width = l.battery_start() + l.battery_width + l.pad;
     l.height = l.px(32); // Numerical ink fits; font leading is checked by GDI tests.
     return l;
 }
@@ -43,7 +45,7 @@ inline COLORREF battery_color(int value, COLORREF normal, bool dark) {
     return normal;
 }
 inline void line(HDC dc, int x1, int y1, int x2, int y2) { MoveToEx(dc, x1, y1, nullptr); LineTo(dc, x2, y2); }
-enum class Icon { down, up, cpu, memory, mouse };
+enum class Icon { down, up, cpu, memory };
 inline RECT cpu_glyph_rect(const RECT& cell) {
     int size=std::min(static_cast<int>(cell.right-cell.left),static_cast<int>(cell.bottom-cell.top));
     int left=cell.left+(cell.right-cell.left-size)/2;
@@ -101,9 +103,6 @@ inline void draw_icon(HDC dc, Icon icon, const RECT& rect, COLORREF color, const
             line(dc,cx+l.px(1)*n,cy-l.px(1),cx+l.px(1)*n,cy+l.px(1));
             line(dc,cx+l.px(1)*n,cy+l.px(2),cx+l.px(1)*n,cy+l.px(4));
         }
-    } else {
-        RoundRect(dc,cx-l.px(4),cy-l.px(6),cx+l.px(4)+1,cy+l.px(6)+1,l.px(7),l.px(7));
-        line(dc,cx,cy-l.px(5),cx,cy); line(dc,cx-l.px(3),cy,cx+l.px(3)+1,cy);
     }
     SelectObject(dc, old_brush); SelectObject(dc, old_pen); DeleteObject(pen);
 }
@@ -129,9 +128,12 @@ inline void draw(HDC dc, int x, int y, int w, int h, bool dark, COLORREF normal,
     int usage_value = l.usage_start()+l.icon+l.icon_gap;
     draw_text(dc,s.monitor_received?percentage(s.monitor.cpu_usage):L"?",cell(top,usage_value,l.usage_end()),normal);
     draw_text(dc,s.monitor_received?percentage(s.monitor.memory_usage):L"?",cell(bottom,usage_value,l.usage_end()),normal);
-    draw_icon(dc,Icon::mouse,cell(top,l.battery_start(),l.battery_start()+l.percent_width),normal,l);
-    draw_text(dc,battery_text(s.battery,now),cell(bottom,l.battery_start(),l.battery_start()+l.percent_width),
-              battery_color(battery_value(s.battery,now),normal,dark));
+    const auto current = carousel(s, now);
+    draw_device_icon(dc,current.device,cell(top,l.battery_start(),l.battery_start()+l.battery_width),l.px(14),normal);
+    auto number=cell(bottom,l.battery_start(),l.battery_start()+l.battery_width);
+    auto value=battery_text(*current.sample,now);
+    SetTextColor(dc,battery_color(battery_value(*current.sample,now),normal,dark));
+    DrawTextW(dc,value.c_str(),static_cast<int>(value.size()),&number,DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
     RestoreDC(dc,saved);
 }
 }

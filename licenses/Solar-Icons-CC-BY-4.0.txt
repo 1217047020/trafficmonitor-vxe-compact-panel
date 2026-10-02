@@ -1,0 +1,14 @@
+Solar Icons — Attribution / CC BY 4.0
+Author: 480 Design
+Icons: gamepad-minimalistic-linear (G5), airbuds-case-open-linear (E3)
+Original collection: https://www.figma.com/community/file/1166831539721848736
+Source data: https://github.com/iconify/icon-sets/blob/master/json/solar.json
+License: Creative Commons Attribution 4.0 International
+License URI: https://creativecommons.org/licenses/by/4.0/
+Legal code: https://creativecommons.org/licenses/by/4.0/legalcode.en
+
+Original SVG geometry is retained. SVGs have been rasterized and converted
+into monochrome alpha masks for native Windows GDI rendering. Theme colors
+and display sizes are chosen by the host. No endorsement by 480 Design is
+implied. The icons are provided without warranties under the linked license.
+Retain this attribution and the license URI when distributing these assets.

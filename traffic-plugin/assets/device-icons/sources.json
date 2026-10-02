@@ -1,0 +1,53 @@
+[
+  {
+    "id": "M3",
+    "category": "鼠标",
+    "prefix": "ph",
+    "name": "mouse-simple",
+    "description": "简洁线框",
+    "license": {
+      "title": "MIT",
+      "spdx": "MIT",
+      "url": "https://github.com/phosphor-icons/core/blob/main/LICENSE"
+    },
+    "author": {
+      "name": "Phosphor Icons",
+      "url": "https://github.com/phosphor-icons/core"
+    },
+    "source": "https://raw.githubusercontent.com/iconify/icon-sets/master/json/ph.json"
+  },
+  {
+    "id": "G5",
+    "category": "手柄",
+    "prefix": "solar",
+    "name": "gamepad-minimalistic-linear",
+    "description": "圆润极简",
+    "license": {
+      "title": "CC BY 4.0",
+      "spdx": "CC-BY-4.0",
+      "url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    "author": {
+      "name": "480 Design",
+      "url": "https://www.figma.com/community/file/1166831539721848736"
+    },
+    "source": "https://raw.githubusercontent.com/iconify/icon-sets/master/json/solar.json"
+  },
+  {
+    "id": "E3",
+    "category": "耳机仓",
+    "prefix": "solar",
+    "name": "airbuds-case-open-linear",
+    "description": "开盖 · 线框",
+    "license": {
+      "title": "CC BY 4.0",
+      "spdx": "CC-BY-4.0",
+      "url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    "author": {
+      "name": "480 Design",
+      "url": "https://www.figma.com/community/file/1166831539721848736"
+    },
+    "source": "https://raw.githubusercontent.com/iconify/icon-sets/master/json/solar.json"
+  }
+]

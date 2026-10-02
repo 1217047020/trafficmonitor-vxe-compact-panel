@@ -46,6 +46,25 @@ int wmain(int argc,wchar_t** argv){
     CHECK(tip.find(L"839680 B/s")!=std::wstring::npos);
     CHECK(tooltip(snap,41001).find(L"鼠标电量：不可用（?）")!=std::wstring::npos);
     CHECK(tooltip(snap,41001).find(L"鼠标电量：85%") == std::wstring::npos);
+    CHECK(carousel(snap,5000).device==BatteryDevice::mouse);
+    CHECK(std::wstring(battery_label(BatteryDevice::mouse))==L"鼠标");
+    CHECK(std::wstring(battery_label(BatteryDevice::controller))==L"手柄");
+    CHECK(std::wstring(battery_label(BatteryDevice::earcase))==L"耳仓");
+    snap.controller_registered=true;snap.controller={64,1000,0,1,false,false,0};
+    CHECK(carousel(snap,0).device==BatteryDevice::mouse);
+    CHECK(carousel(snap,4999).device==BatteryDevice::mouse);
+    CHECK(carousel(snap,5000).device==BatteryDevice::controller);
+    CHECK(carousel(snap,9999).sample==&snap.controller);
+    CHECK(carousel(snap,10000).device==BatteryDevice::mouse);
+    CHECK(tooltip(snap,1000).find(L"手柄电量：64%")!=std::wstring::npos);
+    CHECK(tooltip(snap,41001).find(L"手柄电量：64%") == std::wstring::npos);
+    snap.earcase_registered=true;snap.earcase={94,1000,0,1,false,false};
+    CHECK(carousel(snap,10000).device==BatteryDevice::earcase);
+    CHECK(carousel(snap,14999).sample==&snap.earcase);
+    CHECK(carousel(snap,15000).device==BatteryDevice::mouse);
+    snap.controller_registered=false;
+    CHECK(carousel(snap,5000).device==BatteryDevice::earcase);
+    snap.controller_registered=false;snap.earcase_registered=false;
     SharedState state; CompactItem panel(state); MouseItem legacy(state);
     CHECK(std::wstring(legacy.GetItemId())==L"vxe_r1_battery");
     CHECK(std::wstring(panel.GetItemId())==L"vxe_compact_panel"); CHECK(panel.IsCustomDraw());
@@ -56,6 +75,9 @@ int wmain(int argc,wchar_t** argv){
         auto font=CreateFontW(-MulDiv(9,dpi,72),0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH|FF_SWISS,L"微软雅黑");
         auto old=SelectObject(dc,font);auto l=measure(dc);auto width=panel.GetItemWidthEx(dc);
         CHECK(width==l.width);
+        CHECK(l.battery_width>=l.percent_width);
+        CHECK(l.battery_width>=l.px(14));
+        CHECK(l.px(14)<=l.height/2);
         // YaHei includes unused line leading beyond 16 DIP. Check rendered ink,
         // not tmHeight, before accepting the fixed 32-DIP host rectangle.
         {
@@ -63,7 +85,7 @@ int wmain(int argc,wchar_t** argv){
             BITMAPINFO ref_info{};ref_info.bmiHeader={sizeof(BITMAPINFOHEADER),ref_width,-ref_height,1,32,BI_RGB};
             void* ref_pixels=nullptr;auto ref_bitmap=CreateDIBSection(dc,&ref_info,DIB_RGB_COLORS,&ref_pixels,nullptr,0);
             auto previous_bitmap=SelectObject(dc,ref_bitmap);
-            for(const auto& text : {L"0123456789",L"99.9M",L"1023B",L"17e9G",L"820K",L"100",L"?",L"--"}){
+            for(const auto& text : {L"0123456789",L"99.9M",L"1023B",L"17e9G",L"820K",L"100",L"?",L"--",L"鼠标",L"手柄",L"耳仓"}){
                 // Reference target is not clipped at row boundaries. Any painted
                 // pixel above/below the row would be lost by real panel clipping.
                 memset(ref_pixels,0,ref_width*ref_height*4);
@@ -109,6 +131,38 @@ int wmain(int argc,wchar_t** argv){
         }
         int cpu_x=cpu_box.left+(cpu_box.right-cpu_box.left)/2, cpu_y=cpu_box.top+(cpu_box.bottom-cpu_box.top)/2;
         CHECK((p[cpu_y*all.right+cpu_x]&0xffffff)==0x141e28);
+        // Exercise all selected production glyphs, their alpha/color blending,
+        // both row bounds, and the same GDI-state contract at every tested DPI.
+        snap.battery={85,30000,0,1,false,false};
+        snap.controller_registered=true;snap.controller={64,30000,0,1,false,false,0};
+        snap.earcase_registered=true;snap.earcase={94,30000,0,1,false,false};
+        auto resources=GetGuiResources(GetCurrentProcess(),GR_GDIOBJECTS);
+        for(unsigned phase=0;phase<3;++phase){
+            auto background=CreateSolidBrush(RGB(20,30,40));FillRect(dc,&all,background);DeleteObject(background);
+            SetTextColor(dc,RGB(4,5,6));SetBkMode(dc,OPAQUE);
+            const auto foreground=RGB(234,201,167);
+            draw(dc,10,10,width,MulDiv(32,dpi,96),true,foreground,l,snap,30000+phase*5000);
+            GdiFlush();
+            CHECK(GetTextColor(dc)==RGB(4,5,6));CHECK(GetBkMode(dc)==OPAQUE);
+            CHECK(GetCurrentObject(dc,OBJ_FONT)==font);
+            int size=l.px(14),gx=10+l.battery_start()+(l.battery_width-size)/2;
+            int gy=10+(MulDiv(32,dpi,96)/2-size)/2;
+            const device_art::Mask* mask=nullptr;
+            for(const auto& candidate:device_art::masks[phase])if(candidate.size==size)mask=&candidate;
+            CHECK(mask!=nullptr);unsigned painted=0;
+            for(int yy=0;yy<size;++yy)for(int xx=0;xx<size;++xx){
+                unsigned a=mask->alpha[yy*size+xx];
+                auto blend=[a](unsigned fg,unsigned bg){return (fg*a+bg*(255-a)+127)/255;};
+                auto expected=(blend(234,20)<<16)|(blend(201,30)<<8)|blend(167,40);
+                CHECK((p[(gy+yy)*all.right+gx+xx]&0xffffff)==expected);
+                painted+=a!=0;
+            }
+            CHECK(painted>10);
+            for(int yy=0;yy<all.bottom;++yy)for(int xx=0;xx<all.right;++xx)
+                if(xx<10 || xx>=width+10 || yy<10 || yy>=all.bottom-10)
+                    CHECK((p[yy*all.right+xx]&0xffffff)==0x141e28);
+        }
+        CHECK(GetGuiResources(GetCurrentProcess(),GR_GDIOBJECTS)==resources);
         SelectObject(dc,old_bitmap);DeleteObject(bitmap);SelectObject(dc,old);DeleteObject(font);
     }
     DeleteDC(dc);

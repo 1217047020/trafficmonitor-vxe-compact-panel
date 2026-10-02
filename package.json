@@ -1,8 +1,8 @@
 {
   "name": "trafficmonitor-vxe-compact-panel",
-  "version": "0.3.0",
+  "version": "0.5.0-pudding",
   "private": true,
   "type": "module",
   "scripts": { "test": "node --test tests/*.test.mjs" },
-  "description": "TrafficMonitor compact taskbar panel and native VXE R1 NearLink battery plugin"
+  "description": "TrafficMonitor compact taskbar panel with native VXE, Beitong and Pudding battery carousel"
 }

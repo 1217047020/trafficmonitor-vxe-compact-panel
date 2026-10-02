@@ -89,6 +89,20 @@ int wmain(int argc,wchar_t** argv){
         for(bool dark:{false,true}){
             auto normal=dark?RGB(240,240,240):RGB(30,30,30),back=dark?RGB(32,32,32):RGB(242,242,242);
             panel.color(normal);std::wstring theme=dark?L"dark":L"light";
+            if(argc>2 && wcscmp(argv[2],L"--carousel")==0){
+                compact::Snapshot snap;snap.monitor_received=true;snap.monitor=monitor;
+                snap.battery={85,30000,0,1,false,false};
+                snap.controller={64,30000,0,1,false,false,0};snap.controller_registered=true;
+                snap.earcase={94,30000,0,1,false,false};snap.earcase_registered=true;
+                unsigned phase=0;
+                for(const auto& device:{L"mouse",L"controller",L"case-mock"}){
+                    Surface image(width,height);auto oldfont=SelectObject(image.dc,font);image.fill(back);
+                    compact::draw(image.dc,0,0,width,height,dark,normal,layout,snap,30000+5000*phase++);
+                    image.save(out/(theme+L"-"+std::to_wstring(dpi)+L"-carousel-"+device+L".png"));
+                    SelectObject(image.dc,oldfont);
+                }
+                continue;
+            }
             const std::vector<std::pair<std::wstring,compact::BatterySample>> states{
                 {L"normal",{85,GetTickCount64(),0,1,false,false}},
                 {L"zero",{0,GetTickCount64(),0,1,false,false}},

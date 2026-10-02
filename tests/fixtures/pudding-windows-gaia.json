@@ -1,0 +1,85 @@
+{
+  "source": "Windows native_probe with production query(), 2026-10-02, fresh RFCOMM connections",
+  "scope": "Actual Windows case23 and case84 states compared with phone HCI/App logs. Case97 Windows-only; charging encoding unverified.",
+  "api_version": 3,
+  "transport_version": 4,
+  "captures": [
+    {
+      "repeat": 1,
+      "wire": "ff040006001d1b01016402640317",
+      "left": 100,
+      "right": 100,
+      "case": 23
+    },
+    {
+      "repeat": 2,
+      "wire": "ff040006001d1b01016402640317",
+      "left": 100,
+      "right": 100,
+      "case": 23
+    },
+    {
+      "repeat": 3,
+      "wire": "ff040006001d1b01016402640317",
+      "left": 100,
+      "right": 100,
+      "case": 23
+    }
+  ],
+  "unavailable_case_capture": {
+    "wire": "ff040006001d1b010164026403ff",
+    "case": null,
+    "context": "Case field became FF after the first 23 state; exact physical cause not established"
+  },
+  "out_of_range_case_captures": [
+    {
+      "wire": "ff040006001d1b010164026403de",
+      "case_raw": 222,
+      "case": null
+    },
+    {
+      "wire": "ff040006001d1b010164026403df",
+      "case_raw": 223,
+      "case": null
+    }
+  ],
+  "out_of_range_context": "User confirmed both earbuds in case, lid open, USB charging, Windows connected, phone Bluetooth off. No charging-bit interpretation or phone App comparison has been established for DE/DF.",
+  "unplugged_captures": [
+    {
+      "repeat": 1,
+      "wire": "ff040006001d1b01016402640361",
+      "left": 100,
+      "right": 100,
+      "case": 97
+    },
+    {
+      "repeat": 2,
+      "wire": "ff040006001d1b01016402640361",
+      "left": 100,
+      "right": 100,
+      "case": 97
+    }
+  ],
+  "unplugged_context": "Only case USB charging cable unplugged per user confirmation; both earbuds remain in case, lid open, Windows connected, phone Bluetooth off. Phone App comparison of case97 pending.",
+  "second_state_comparison": {
+    "wire": "ff040006001d1b01016402640354",
+    "left": 100,
+    "right": 100,
+    "case": 84,
+    "windows_fresh_connection_repeats": 3,
+    "phone_app_case": 84,
+    "phone_app_samples_after_reconnect": 169,
+    "sample_gap_seconds_estimate": 15.454,
+    "host_minus_phone_clock_seconds_estimate": 319.864,
+    "clock_resolution_uncertainty_seconds": 1.046,
+    "context": "Same physical state: both earbuds in case, lid open, case unplugged. Phone Bluetooth enabled only after Windows disconnect. HCI logging stayed disabled.",
+    "phone_evidence_type": "Target App runtime syncBatteryLevel log; NOT a second full HCI capture"
+  },
+  "enabled_dll_capture": {
+    "wire": "ff040006001d1b0101640264034c",
+    "left": 100,
+    "right": 100,
+    "case": 76,
+    "context": "x64 and x86 production DLLs each passed isolated real DataRequired collection and --expect-numeric; native query after x64 DLL matched. Not installed TrafficMonitor UI acceptance."
+  }
+}
