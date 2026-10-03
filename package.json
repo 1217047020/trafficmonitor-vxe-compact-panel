@@ -1,6 +1,6 @@
 {
   "name": "trafficmonitor-vxe-compact-panel",
-  "version": "0.5.0-pudding",
+  "version": "0.5.1-controller-history",
   "private": true,
   "type": "module",
   "scripts": { "test": "node --test tests/*.test.mjs" },

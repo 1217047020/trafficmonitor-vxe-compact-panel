@@ -131,8 +131,9 @@ inline void draw(HDC dc, int x, int y, int w, int h, bool dark, COLORREF normal,
     const auto current = carousel(s, now);
     draw_device_icon(dc,current.device,cell(top,l.battery_start(),l.battery_start()+l.battery_width),l.px(14),normal);
     auto number=cell(bottom,l.battery_start(),l.battery_start()+l.battery_width);
-    auto value=battery_text(*current.sample,now);
-    SetTextColor(dc,battery_color(battery_value(*current.sample,now),normal,dark));
+    auto displayed=display_battery_value(s,current,now);
+    auto value=displayed==vxe::offline ? L"--" : percentage(displayed);
+    SetTextColor(dc,battery_color(displayed,normal,dark));
     DrawTextW(dc,value.c_str(),static_cast<int>(value.size()),&number,DT_CENTER|DT_VCENTER|DT_SINGLELINE|DT_NOPREFIX);
     RestoreDC(dc,saved);
 }

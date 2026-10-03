@@ -58,6 +58,38 @@ int wmain(int argc,wchar_t** argv){
     CHECK(carousel(snap,10000).device==BatteryDevice::mouse);
     CHECK(tooltip(snap,1000).find(L"手柄电量：64%")!=std::wstring::npos);
     CHECK(tooltip(snap,41001).find(L"手柄电量：64%") == std::wstring::npos);
+    // History is controller-only, and only an explicit clean offline result uses it.
+    SharedState history;
+    history.controller({vxe::offline,1000,0,0,false,false});
+    auto h=history.read();
+    CHECK(display_battery_value(h,carousel(h,5000),5000)==vxe::offline);
+    history.controller({63,2000,0,1,false,false,1});
+    history.controller({vxe::offline,3000,0,0,false,false});
+    h=history.read();
+    CHECK(controller_history_visible(h));
+    CHECK(display_battery_value(h,carousel(h,5000),5000)==63);
+    CHECK(display_battery_value(h,carousel(h,85000),85000)==63);
+    CHECK(tooltip(h,85000).find(L"63%（历史最后一次检测")!=std::wstring::npos);
+    CHECK(tooltip(h,85000).find(L"正在充电")==std::wstring::npos);
+    CHECK(battery_value(h.controller,85000)==vxe::unavailable);
+    CHECK(display_battery_value(h,carousel(h,80000),80000)==vxe::unavailable);
+    for(const auto& invalid : {BatterySample{101,4000,0,1,false,false},
+        BatterySample{vxe::unavailable,4000,5,1,false,false},
+        BatterySample{vxe::offline,4000,1460,1,true,false},
+        BatterySample{vxe::offline,4000,0,0,false,true}}) {
+        history.controller(invalid); h=history.read();
+        CHECK(!controller_history_visible(h)); CHECK(h.controller_last_valid.value==63);
+    }
+    history.controller({82,5000,0,1,false,false,0});h=history.read();
+    CHECK(display_battery_value(h,carousel(h,5000),5000)==82);
+    CHECK(!controller_history_visible(h));CHECK(h.controller_last_valid.value==82);
+    CHECK(display_battery_value(h,carousel(h,85000),85000)==vxe::unavailable);
+    history.controller({vxe::offline,6000,0,0,false,false}); h=history.read();
+    CHECK(display_battery_value(h,carousel(h,85000),85000)==82);
+    SharedState restored;restored.restore_controller(0);
+    restored.controller({vxe::offline,1000,0,0,false,false});h=restored.read();
+    CHECK(controller_history_visible(h));CHECK(display_battery_value(h,carousel(h,5000),5000)==0);
+    restored.restore_controller(101); CHECK(restored.read().controller_last_valid.value==0);
     snap.earcase_registered=true;snap.earcase={94,1000,0,1,false,false};
     CHECK(carousel(snap,10000).device==BatteryDevice::earcase);
     CHECK(carousel(snap,14999).sample==&snap.earcase);
@@ -137,6 +169,17 @@ int wmain(int argc,wchar_t** argv){
         snap.controller_registered=true;snap.controller={64,30000,0,1,false,false,0};
         snap.earcase_registered=true;snap.earcase={94,30000,0,1,false,false};
         auto resources=GetGuiResources(GetCurrentProcess(),GR_GDIOBJECTS);
+        // Historical disconnected G5 must paint exactly the last valid number,
+        // at the same width/DPI/color, without changing any other column.
+        auto clear=CreateSolidBrush(RGB(20,30,40));FillRect(dc,&all,clear);DeleteObject(clear);
+        draw(dc,10,10,width,MulDiv(32,dpi,96),true,RGB(234,201,167),l,snap,35000);
+        GdiFlush();std::vector<DWORD> online_pixels(p,p+all.right*all.bottom);
+        auto disconnected=snap;
+        disconnected.controller_last_valid=snap.controller;
+        disconnected.controller={vxe::offline,34000,0,0,false,false};
+        clear=CreateSolidBrush(RGB(20,30,40));FillRect(dc,&all,clear);DeleteObject(clear);
+        draw(dc,10,10,width,MulDiv(32,dpi,96),true,RGB(234,201,167),l,disconnected,35000);
+        GdiFlush();CHECK(std::equal(online_pixels.begin(),online_pixels.end(),p));
         for(unsigned phase=0;phase<3;++phase){
             auto background=CreateSolidBrush(RGB(20,30,40));FillRect(dc,&all,background);DeleteObject(background);
             SetTextColor(dc,RGB(4,5,6));SetBkMode(dc,OPAQUE);
@@ -176,7 +219,8 @@ int wmain(int argc,wchar_t** argv){
         CHECK(std::wstring(plugin->GetItem(0)->GetItemId())==L"vxe_r1_battery");
         CHECK(std::wstring(plugin->GetItem(1)->GetItemId())==L"vxe_compact_panel");
         plugin->OnMonitorInfo(snap.monitor);
-        CHECK(std::wstring(plugin->GetTooltipInfo()).find(L"CPU占用：100%")!=std::wstring::npos);
+        CHECK(plugin->GetTooltipInfo()!=nullptr);
+        CHECK(std::wstring(plugin->GetTooltipInfo()).empty());
         CHECK(std::wstring(plugin->GetItem(0)->GetItemValueText())==L"不可用");
         FreeLibrary(dll);
     }

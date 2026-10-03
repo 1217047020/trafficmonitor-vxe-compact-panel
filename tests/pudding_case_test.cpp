@@ -46,7 +46,9 @@ int wmain(int argc,wchar_t** argv) {
         check(plugin->GetItem(2)==nullptr);
         check(std::wstring(plugin->GetItem(0)->GetItemId())==L"vxe_r1_battery");
         check(std::wstring(plugin->GetItem(1)->GetItemId())==L"vxe_compact_panel");
-        check(std::wstring(plugin->GetInfo(ITMPlugin::TMI_VERSION))==L"0.5.0-pudding");
+        check(std::wstring(plugin->GetInfo(ITMPlugin::TMI_VERSION))==L"0.5.1-controller-history");
+        check(plugin->GetTooltipInfo()!=nullptr);
+        check(std::wstring(plugin->GetTooltipInfo()).empty());
         FreeLibrary(dll); // Never start HID workers in a test competing with installed DLL.
     }
     printf("PASS: %u carousel adapter/TTL/ABI checks; no device calls\n",checks);

@@ -23,6 +23,7 @@ struct Snapshot {
     bool monitor_received = false;
     BatterySample battery;
     BatterySample controller, earcase;
+    BatterySample controller_last_valid;
     bool controller_registered = false, earcase_registered = false;
     std::wstring earcase_detail;
 };
@@ -41,6 +42,13 @@ public:
     void controller(const BatterySample& sample) {
         std::lock_guard<std::mutex> lock(mutex);
         current.controller = sample; current.controller_registered = true;
+        if (sample.completed && sample.value >= 0 && sample.value <= 100 &&
+            sample.matches == 1 && !sample.error && !sample.timeout && !sample.stopped)
+            current.controller_last_valid = sample;
+    }
+    void restore_controller(int value) {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (value >= 0 && value <= 100) current.controller_last_valid.value = value;
     }
     void earcase(const BatterySample& sample, const std::wstring& detail = {}) {
         std::lock_guard<std::mutex> lock(mutex);
@@ -73,6 +81,16 @@ inline int battery_value(const BatterySample& sample, std::uint64_t now) {
     if (expired(sample, now)) return vxe::unavailable;
     return sample.value >= 0 && sample.value <= 100 ? sample.value :
         sample.value == vxe::offline ? vxe::offline : vxe::unavailable;
+}
+inline bool controller_history_visible(const Snapshot& s) {
+    const auto& b = s.controller;
+    return b.completed && b.value == vxe::offline && !b.error && !b.timeout && !b.stopped &&
+        s.controller_last_valid.value >= 0 && s.controller_last_valid.value <= 100;
+}
+inline int display_battery_value(const Snapshot& s, const CarouselEntry& entry, std::uint64_t now) {
+    if (entry.device == BatteryDevice::controller && controller_history_visible(s))
+        return s.controller_last_valid.value;
+    return battery_value(*entry.sample, now);
 }
 inline std::wstring percentage(int value) {
     return value >= 0 && value <= 100 ? std::to_wstring(value) : L"?";
@@ -145,7 +163,7 @@ inline std::wstring tooltip(const Snapshot& sample, std::uint64_t now) {
     text += L"\n鼠标采样状态：" + battery_reason(sample.battery, now);
     if (sample.battery.completed && now >= sample.battery.completed)
         text += L"；距完成 " + std::to_wstring((now - sample.battery.completed) / 1000) + L" 秒";
-    text += L"\nHID每30秒单次查询；40秒过期；不保留异常旧电量";
+    text += L"\nHID每30秒单次查询；40秒过期；鼠标不保留异常旧电量";
     auto extra = [&](const wchar_t* name, const BatterySample& b) {
         const int p = battery_value(b, now);
         text += L"\n" + std::wstring(name) + L"电量：";
@@ -155,7 +173,13 @@ inline std::wstring tooltip(const Snapshot& sample, std::uint64_t now) {
             text += L"；距采样 " + std::to_wstring((now - b.completed) / 1000) + L" 秒";
         if (p == vxe::unavailable) text += L"；错误码=" + std::to_wstring(b.error);
     };
-    if (sample.controller_registered) extra(L"手柄", sample.controller);
+    if (sample.controller_registered) {
+        if (controller_history_visible(sample))
+            text += L"\n手柄电量：" + percentage(sample.controller_last_valid.value) +
+                L"%（历史最后一次检测；手柄已断连或不在已验证模式，非实时电量）";
+        else extra(L"手柄", sample.controller);
+        text += L"\n手柄断连保留最后一次有效电量；本地缓存跨重启保留；重新连接后更新";
+    }
     if (sample.earcase_registered) {
         extra(L"耳机仓", sample.earcase);
         if (!sample.earcase_detail.empty()) text += L"\n耳机仓采样状态：" + sample.earcase_detail;

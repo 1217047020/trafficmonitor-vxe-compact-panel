@@ -24,6 +24,8 @@ $commands=@(
     "cl /nologo /std:c++17 /EHsc /utf-8 /O2 /MT `"$src/compact_test.cpp`" /Fe:compact_test.exe /link gdi32.lib user32.lib",
     'if errorlevel 1 exit /b 1', 'compact_test.exe VxeBattery.dll',
     'if errorlevel 1 exit /b 1',
+    "cl /nologo /std:c++17 /EHsc /utf-8 /O2 /MT `"$root/tests/controller_cache_test.cpp`" /Fe:controller_cache_test.exe",
+    'if errorlevel 1 exit /b 1', 'controller_cache_test.exe', 'if errorlevel 1 exit /b 1',
     "cl /nologo /std:c++17 /EHsc /utf-8 /O2 /MT /D_WIN32_WINNT=0x0602 `"$root/pudding-plugin/native_test.cpp`" /Fe:pudding_protocol_test.exe",
     'if errorlevel 1 exit /b 1', 'pudding_protocol_test.exe', 'if errorlevel 1 exit /b 1',
     "cl /nologo /std:c++17 /EHsc /utf-8 /O2 /MT /D_WIN32_WINNT=0x0602 `"$root/tests/pudding_case_test.cpp`" /Fe:pudding_case_test.exe /link ws2_32.lib bthprops.lib bcrypt.lib",

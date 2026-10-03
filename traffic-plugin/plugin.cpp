@@ -2,6 +2,7 @@
 #include "native_hid.h"
 #include "beitong_hid.h"
 #include "plugin_items.h"
+#include "controller_cache.h"
 #include <atomic>
 #include <array>
 #include <chrono>
@@ -50,6 +51,8 @@ public:
         if(!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS|GET_MODULE_HANDLE_EX_FLAG_PIN,reinterpret_cast<LPCWSTR>(&vxe::query),&module)){started=false;return;}
         try{
             std::thread([this]{
+                const auto cache_path=controller_cache::path();
+                state.restore_controller(controller_cache::load(cache_path));
                 bool mouse_active=true, controller_active=true;
                 for(;;){
                     if(mouse_active){auto r=vxe::query();
@@ -60,6 +63,8 @@ public:
                         int value=r.status.percentage_candidate;
                         if(!r.matches && !r.error)value=vxe::offline;
                         state.controller({value,GetTickCount64(),r.error,r.matches,r.timed_out,r.stop,r.status.charge_state_raw});
+                        if(value>=0 && value<=100 && r.matches==1 && !r.error && !r.timed_out && !r.stop)
+                            controller_cache::save(cache_path,value);
                         controller_active=!r.stop;
                     }
                     if(!mouse_active && !controller_active)break;
@@ -73,12 +78,12 @@ public:
         case TMI_NAME:return L"VXE R1 独立电量插件";
         case TMI_DESCRIPTION:return L"原生HID鼠标/手柄与GAIA布丁耳机仓采集；M3/G5/E3图标电量轮播，保持9pt和原布局。";
         case TMI_AUTHOR:return L"Local VXE Battery Project";
-        case TMI_VERSION:return L"0.5.0-pudding";
+        case TMI_VERSION:return L"0.5.1-controller-history";
         default:return L"";}
     }
     const wchar_t* GetTooltipInfo() override{
-        thread_local std::wstring text;
-        text=compact::tooltip(state.read(),GetTickCount64());return text.c_str();
+        // Keep host hover text unchanged; battery data stays in the panel.
+        return L"";
     }
 };
 extern "C" __declspec(dllexport) ITMPlugin* TMPluginGetInstance(){static auto* plugin=new BatteryPlugin;return plugin;}
