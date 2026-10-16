@@ -118,11 +118,11 @@ inline void draw(HDC dc, int x, int y, int w, int h, bool dark, COLORREF normal,
     int left = x + std::max(0,w-l.width), half = h/2;
     RECT top{left,y,left+l.width,y+half}, bottom{left,y+half,left+l.width,y+h};
     auto cell = [&](const RECT& row, int begin, int end) { return RECT{left+begin,row.top,left+end,row.bottom}; };
-    draw_icon(dc,Icon::down,cell(top,l.pad,l.pad+l.arrow),normal,l);
-    draw_icon(dc,Icon::up,cell(bottom,l.pad,l.pad+l.arrow),normal,l);
+    draw_icon(dc,Icon::up,cell(top,l.pad,l.pad+l.arrow),normal,l);
+    draw_icon(dc,Icon::down,cell(bottom,l.pad,l.pad+l.arrow),normal,l);
     int speed_start = l.pad+l.arrow+l.icon_gap;
-    draw_text(dc,s.monitor_received?speed(s.monitor.down_speed):L"?",cell(top,speed_start,l.network_end()),normal);
-    draw_text(dc,s.monitor_received?speed(s.monitor.up_speed):L"?",cell(bottom,speed_start,l.network_end()),normal);
+    draw_text(dc,s.monitor_received?speed(s.monitor.up_speed):L"?",cell(top,speed_start,l.network_end()),normal);
+    draw_text(dc,s.monitor_received?speed(s.monitor.down_speed):L"?",cell(bottom,speed_start,l.network_end()),normal);
     draw_icon(dc,Icon::cpu,cell(top,l.usage_start(),l.usage_start()+l.icon),normal,l);
     draw_icon(dc,Icon::memory,cell(bottom,l.usage_start(),l.usage_start()+l.icon),normal,l);
     int usage_value = l.usage_start()+l.icon+l.icon_gap;

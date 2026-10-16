@@ -142,6 +142,7 @@ int wmain(int argc,wchar_t** argv){
         auto old_bitmap=SelectObject(dc,bitmap);
         auto brush=CreateSolidBrush(RGB(20,30,40));RECT all{0,0,width+20,MulDiv(32,dpi,96)+20};FillRect(dc,&all,brush);DeleteObject(brush);
         SetTextColor(dc,RGB(4,5,6));SetBkMode(dc,OPAQUE);
+        state.monitor(snap.monitor); // Distinct upload/download values expose row mix-ups.
         state.battery({100,GetTickCount64(),0,1,false,false});panel.color(RGB(255,255,255));
         panel.DrawItem(dc,10,10,width,MulDiv(32,dpi,96),true);GdiFlush();
         CHECK(GetTextColor(dc)==RGB(4,5,6));CHECK(GetBkMode(dc)==OPAQUE);CHECK(GetCurrentObject(dc,OBJ_FONT)==font);
@@ -163,6 +164,23 @@ int wmain(int argc,wchar_t** argv){
         }
         int cpu_x=cpu_box.left+(cpu_box.right-cpu_box.left)/2, cpu_y=cpu_box.top+(cpu_box.bottom-cpu_box.top)/2;
         CHECK((p[cpu_y*all.right+cpu_x]&0xffffff)==0x141e28);
+        // Pixel regression: top row is upload (arrow AND value), bottom is download.
+        // Repaint only the network column with an independent explicit reference;
+        // every pixel, including all other columns and padding, must stay identical.
+        std::vector<DWORD> rendered(p,p+all.right*all.bottom);
+        int half=MulDiv(32,dpi,96)/2;
+        RECT network{10+l.pad,10,10+l.network_end(),10+2*half};
+        auto network_background=CreateSolidBrush(RGB(20,30,40));
+        FillRect(dc,&network,network_background);DeleteObject(network_background);
+        int reference_state=SaveDC(dc);SetBkMode(dc,TRANSPARENT);
+        for(int row=0;row<2;++row){
+            RECT arrow{10+l.pad,10+row*half,10+l.pad+l.arrow,10+(row+1)*half};
+            RECT value{10+l.pad+l.arrow+l.icon_gap,arrow.top,10+l.network_end(),arrow.bottom};
+            draw_icon(dc,row==0?Icon::up:Icon::down,arrow,RGB(255,255,255),l);
+            draw_text(dc,speed(row==0?snap.monitor.up_speed:snap.monitor.down_speed),value,RGB(255,255,255));
+        }
+        RestoreDC(dc,reference_state);GdiFlush();
+        CHECK(std::equal(rendered.begin(),rendered.end(),p));
         // Exercise all selected production glyphs, their alpha/color blending,
         // both row bounds, and the same GDI-state contract at every tested DPI.
         snap.battery={85,30000,0,1,false,false};
